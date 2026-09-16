@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Select newest Xcode
         run: |
           XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
@@ -24,7 +24,7 @@ jobs:
         run: |
           codesign --force --deep --sign - build/Build/Products/Release/Ice.app
           ditto -c -k --keepParent build/Build/Products/Release/Ice.app Ice.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Ice-macos-27
           path: Ice.zip
