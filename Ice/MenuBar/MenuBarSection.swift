@@ -4,6 +4,7 @@
 //
 
 import Cocoa
+import OSLog
 
 /// A representation of a section in a menu bar.
 @MainActor
@@ -196,6 +197,7 @@ final class MenuBarSection {
             hiddenSection.controlItem.state = .showItems
             visibleSection.controlItem.state = .showItems
         }
+        Logger.section.debug("show \(String(describing: self.name)) done")
         startRehideChecks()
     }
 
@@ -207,6 +209,7 @@ final class MenuBarSection {
         else {
             return
         }
+        Logger.section.debug("hide \(String(describing: self.name))")
         iceBarPanel?.close()
         switch name {
         case _ where useIceBar:
@@ -279,6 +282,7 @@ final class MenuBarSection {
             }
             if NSEvent.mouseLocation.y < screen.visibleFrame.maxY {
                 if rehideTimer == nil {
+                    Logger.section.debug("rehide timer start interval=\(appState.settingsManager.generalSettingsManager.rehideInterval)")
                     rehideTimer = .scheduledTimer(
                         withTimeInterval: appState.settingsManager.generalSettingsManager.rehideInterval,
                         repeats: false
@@ -289,6 +293,7 @@ final class MenuBarSection {
                         else {
                             return
                         }
+                        Logger.section.debug("rehide timer fired")
                         if NSEvent.mouseLocation.y < screen.visibleFrame.maxY {
                             Task {
                                 await self.hide()
@@ -325,4 +330,9 @@ extension MenuBarSection: BindingExposable { }
 // MARK: - Logger
 private extension Logger {
     static let menuBarSection = Logger(category: "MenuBarSection")
+}
+
+// MARK: - Logger
+private extension Logger {
+    static let section = Logger(category: "MenuBarSection")
 }
