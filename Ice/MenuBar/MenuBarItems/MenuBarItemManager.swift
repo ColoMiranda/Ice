@@ -198,10 +198,11 @@ final class MenuBarItemManager: ObservableObject {
             }
             .store(in: &c)
 
-        Publishers.Merge(
-            UniversalEventMonitor.publisher(for: mouseTrackingMask),
-            RunLoopLocalEventMonitor.publisher(for: mouseTrackingMask, mode: .eventTracking)
-        )
+        // Do not observe these events in the eventTracking mode (see
+        // RunLoopLocalEventMonitor). Draining and reposting the event queue
+        // from inside modal tracking loops breaks button and resize tracking
+        // on macOS 27: traffic lights and window edges stop responding.
+        UniversalEventMonitor.publisher(for: mouseTrackingMask)
         .removeDuplicates()
         .sink { [weak self] event in
             guard let self else {
