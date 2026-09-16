@@ -27,6 +27,32 @@ final class ControlItem {
         static let expanded: CGFloat = 10_000
     }
 
+    /// Length of an expanded hiding spacer.
+    ///
+    /// macOS 27 discards a spacer wider than the status region instead of
+    /// pushing its neighbours into overflow (jordanbaird/Ice#980), so the
+    /// width is fitted inside the region. Older systems keep the 10 000 trick.
+    private func expandedHidingLength() -> CGFloat {
+        guard #available(macOS 27, *) else {
+            return Lengths.expanded
+        }
+        let screen = window?.screen ?? NSScreen.main
+        let regionWidth: CGFloat
+        if let rightArea = screen?.auxiliaryTopRightArea {
+            regionWidth = rightArea.width
+        } else if let screen {
+            let appMenuWidth = appState?.menuBarManager.getApplicationMenuFrame(for: screen.displayID)?.width ?? 300
+            regionWidth = screen.frame.width - appMenuWidth
+        } else {
+            regionWidth = 0
+        }
+        if regionWidth.isFinite, regionWidth > 64 {
+            return max(32, regionWidth - 32)
+        }
+        // ponytail: guess that fits any real status region; exact fit recomputed on next toggle
+        return 1_000
+    }
+
     /// The control item's hiding state (`@Published`).
     @Published var state = HidingState.hideItems
 
@@ -66,7 +92,9 @@ final class ControlItem {
         guard let window else {
             return nil
         }
-        return CGWindowID(window.windowNumber)
+        // windowNumber is Int and traps on overflow with the non-failable
+        // initializer on macOS 26 (jordanbaird/Ice#580, #977).
+        return CGWindowID(exactly: window.windowNumber)
     }
 
     /// A Boolean value that indicates whether the control item serves as
@@ -158,7 +186,7 @@ final class ControlItem {
                     case .visible: Lengths.standard
                     case .hidden, .alwaysHidden:
                         switch state {
-                        case .hideItems: Lengths.expanded
+                        case .hideItems: expandedHidingLength()
                         case .showItems: Lengths.standard
                         }
                     }
