@@ -1,0 +1,30 @@
+name: Build
+on:
+  push:
+    branches: [macos-27]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+      - name: Build
+        run: |
+          xcodebuild -project Ice.xcodeproj -scheme Ice -configuration Release \
+            -destination 'platform=macOS,arch=arm64' \
+            -derivedDataPath build \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            build
+      - name: Zip
+        run: |
+          codesign --force --deep --sign - build/Build/Products/Release/Ice.app
+          ditto -c -k --keepParent build/Build/Products/Release/Ice.app Ice.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ice-macos-27
+          path: Ice.zip
