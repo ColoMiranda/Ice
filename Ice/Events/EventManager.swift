@@ -3,6 +3,7 @@
 //  Ice
 //
 
+import AXSwift
 import Cocoa
 import Combine
 
@@ -491,7 +492,22 @@ extension EventManager {
             return false
         }
         let menuBarItems = MenuBarItem.getMenuBarItems(on: screen.displayID, onScreenOnly: true, activeSpaceOnly: true)
-        return menuBarItems.contains { $0.frame.contains(mouseLocation) }
+        if menuBarItems.contains(where: { $0.frame.contains(mouseLocation) }) {
+            return true
+        }
+        // macOS 27 no longer lists menu bar item windows, so every click
+        // looked like empty space, including clicks on Ice's own control
+        // items. Ask Accessibility what is under the mouse as well: anything
+        // other than the bare menu bar is an item.
+        // Read the raw role string: AXSwift's Role enum has no case for
+        // AXMenuBarItem, so role() would return nil for every status item.
+        guard
+            let element = try? systemWideElement.elementAtPosition(Float(mouseLocation.x), Float(mouseLocation.y)),
+            let role: String = try? element.attribute(.role)
+        else {
+            return false
+        }
+        return role != kAXMenuBarRole
     }
 
     /// A Boolean value that indicates whether the mouse pointer is within
@@ -548,9 +564,4 @@ extension EventManager {
         }
         return iceIconFrame.contains(mouseLocation)
     }
-}
-
-// MARK: - Logger
-private extension Logger {
-    static let eventManager = Logger(category: "EventManager")
 }
